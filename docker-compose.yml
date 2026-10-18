@@ -1,0 +1,31 @@
+services:
+  dockerreg:
+    image: registry:2
+    mem_limit: 40m
+    ports:
+      - 5000:5000
+    volumes:
+      - /home/share/dockerreg:/var/lib/registry
+      - ./certs:/certs
+      - ./dockerreg/config.yml:/etc/docker/registry/config.yml:ro
+    # environment:
+    #   REGISTRY_HTTP_TLS_CERTIFICATE: /certs/domain.crt
+    #   REGISTRY_HTTP_TLS_KEY: /certs/domain.key
+
+    restart: unless-stopped
+  
+  regui:
+    image: hyper/docker-registry-web:v0.1.2
+    mem_limit: 512m
+    ports:
+      - "5080:8080"
+    environment:
+      - REGISTRY_URL=http://dockerreg:5000/v2/
+      - REGISTRY_TRUST_ANY_SSL=false
+      - REGISTRY_NAME=dockerreg:5000
+      - CATALINA_OPTS=-Xms64m -Xmx256m -XX:MaxPermSize=128m -Xss512k -Djava.security.egd=file:/dev/./urandom -Dcontext.path=
+    volumes:
+      - ./gui/config.yml:/conf/config.yml:ro
+    restart: unless-stopped
+    depends_on:
+      - dockerreg
